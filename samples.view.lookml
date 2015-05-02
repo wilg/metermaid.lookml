@@ -87,7 +87,7 @@
   - dimension_group: time
     label: ""
     type: time
-    timeframes: [date, hour, hour_of_day, day_of_week, day_of_month]
+    timeframes: [date, week, month, year, hour, hour_of_day, day_of_week, day_of_month]
     datatype: epoch
     sql: ${TABLE}.time_period_start
 
