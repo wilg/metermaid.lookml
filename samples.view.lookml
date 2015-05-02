@@ -21,27 +21,39 @@
     sql: ${TABLE}.filename
     hidden: true
     
+  - dimension: additional_metadata
+    sql: ${TABLE}.additional_metadata
+    hidden: true
+    
+  - dimension: user_name
+    sql: ${additional_metadata} ->> 'username'
+    
   # ESPI WACKINESS
     
   - dimension: reading_type_currency
     type: int
     sql: ${TABLE}.reading_type_currency
+    hidden: true
 
   - dimension: reading_type_power_of_ten_multiplier
     type: int
     sql: ${TABLE}.reading_type_power_of_ten_multiplier
+    hidden: true
 
   - dimension: reading_type_uom
     type: int
     sql: ${TABLE}.reading_type_uom
+    hidden: true
 
   - dimension: time_period_duration
     type: int
     sql: ${TABLE}.time_period_duration
+    hidden: true
 
   - dimension: usage_point_service_category_kind
     type: int
     sql: ${TABLE}.usage_point_service_category_kind
+    hidden: true
 
   - dimension: value
     type: int
