@@ -90,6 +90,15 @@
     timeframes: [date, week, month, year, hour, hour_of_day, day_of_week, day_of_month]
     datatype: epoch
     sql: ${TABLE}.time_period_start
+    
+  - measure: data_age
+    description: Hours since the last sample.
+    type: number
+    value_format: 0" hours"
+    sql: |
+      EXTRACT(epoch FROM
+        (current_timestamp - to_timestamp(MAX(${TABLE}.time_period_start)))
+      ) / 3600
 
   - measure: count
     type: count
