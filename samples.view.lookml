@@ -30,17 +30,34 @@
     
   # ESPI WACKINESS
     
-  - dimension: reading_type_currency
-    type: int
-    sql: ${TABLE}.reading_type_currency
+  - dimension: currency
+    sql_case:
+      USD: ${TABLE}.reading_type_currency = 840
     hidden: true
-
-  - dimension: reading_type_power_of_ten_multiplier
+    
+  # Find values at: https://naesb.org//copyright/espi.xsd
+  # In hundred-thousandths of the currency
+  - dimension: price_per_unit
+    description: Price for a single unit of energy at the time of this sample.
+    sql: ${TABLE}.cost::double precision / 100000
+    type: number
+    decimals: 6
+    value_format: '$#,##0.000'
+    
+  - dimension: cost
+    description: Final billed cost of this sample.
+    sql: ${price_per_unit} * COALESCE(${kwh}, ${therms})
+    type: number
+    decimals: 6
+    value_format: '$#,##0.000'
+    
+  - dimension: power_of_10
     type: int
     sql: ${TABLE}.reading_type_power_of_ten_multiplier
     hidden: true
 
-  - dimension: reading_type_uom
+  # Find values at: https://naesb.org//copyright/espi.xsd
+  - dimension: unit_of_measure
     type: int
     sql: ${TABLE}.reading_type_uom
     hidden: true
@@ -57,28 +74,40 @@
 
   - dimension: value
     type: int
-    sql: ${TABLE}.value
+    sql: |
+      CASE WHEN ${power_of_10} = 0 THEN
+        ${TABLE}.value
+      ELSE 
+        POWER(10, ${power_of_10}) * ${TABLE}.value::double precision
+      END
     hidden: true
 
   # READINGS
 
   - dimension: type
     sql_case:
-      Gas: ${reading_type_uom} = 169
-      Electric: ${reading_type_uom} = 72
+      Gas: ${unit_of_measure} = 169
+      Electric: ${unit_of_measure} = 72
 
   - dimension: kwh
     label: kWh
     decimals: 3
     type: number
     sql: |
-      CASE WHEN ${reading_type_uom} = 72 THEN
-        0.001 * CASE WHEN ${reading_type_power_of_ten_multiplier} = 0 THEN
-          ${value}
-        ELSE 
-          ${reading_type_power_of_ten_multiplier} * ${value}::double precision
-        END
-      ELSE NULL
+      CASE WHEN ${unit_of_measure} = 72 THEN
+        0.001 * ${value}
+      ELSE 
+        NULL
+      END
+
+  - dimension: therms
+    decimals: 3
+    type: number
+    sql: |
+      CASE WHEN ${unit_of_measure} = 169 THEN
+        ${value}
+      ELSE 
+        NULL
       END
       
   - dimension: address
@@ -115,3 +144,37 @@
     type: average
     decimals: 3
     sql: ${kwh}
+    
+  - measure: total_therms
+    decimals: 3
+    type: sum
+    sql: ${therms}
+    
+  - measure: average_therms
+    type: average
+    decimals: 3
+    sql: ${therms}
+    
+  - measure: total_price_per_unit
+    decimals: 3
+    type: sum
+    sql: ${price_per_unit}
+    value_format: '$#,##0.000'
+
+  - measure: average_price_per_unit
+    decimals: 3
+    type: average
+    sql: ${price_per_unit}
+    value_format: '$#,##0.000'
+
+  - measure: total_cost
+    decimals: 3
+    type: sum
+    sql: ${cost}
+    value_format: '$#,##0.000'
+
+  - measure: average_cost
+    decimals: 3
+    type: average
+    sql: ${cost}
+    value_format: '$#,##0.000'
